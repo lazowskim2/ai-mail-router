@@ -1,0 +1,50 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 10s
+
+  # One-shot job: tells the `ollama` service (over the network, via OLLAMA_HOST)
+  # to pull the model weights. Runs once per `docker compose up`; on later runs
+  # the pull is a fast no-op because the named volume already has the weights.
+  ollama-pull:
+    image: ollama/ollama:latest
+    environment:
+      OLLAMA_HOST: "ollama:11434"
+    entrypoint: ["ollama"]
+    command: ["pull", "${OLLAMA_MODEL:-llama3.2}"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "8025:8025" # web UI
+      - "1025:1025" # SMTP
+
+  api:
+    build: ./api
+    environment:
+      OLLAMA_BASE_URL: "http://ollama:11434/v1"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-llama3.2}"
+      SMTP_HOST: "mailhog"
+      SMTP_PORT: "1025"
+      SMTP_FROM: "ai-router@example.com"
+    ports:
+      - "8000:8000"
+    depends_on:
+      ollama-pull:
+        condition: service_completed_successfully
+      mailhog:
+        condition: service_started
+
+volumes:
+  ollama_data:
