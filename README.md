@@ -1,35 +1,29 @@
-# AI Message Router — Proof of Concept
+# AI Message Router - Proof of Concept
 
-A containerized microservice that acts as an **AI Agent**: it receives a free-text
-message from an employee, uses a locally-hosted LLM (via [Ollama](https://ollama.com))
-to interpret it, and — through real function/tool calling — decides which internal
-department should receive it, then delivers the message by email (captured by MailHog
-for testing).
+Mikroserwis, ktory dziala jak inteligentny router wiadomosci. Przyjmuje krotki tekst od pracownika (np. "nie dziala mi komputer"), wysyla go do lokalnie hostowanego modelu jezykowego (Ollama), a model poprzez prawdziwe tool/function calling decyduje do jakiego dzialu to przekierowac i sam wywoluje narzedzie, ktore wysyla maila. Mail jest przechwytywany przez MailHog, wiec nic nie wychodzi na zewnatrz, wszystko mozna podejrzec w panelu webowym.
 
-## Quick start
+## Jak to odpalic
 
 ```bash
 docker compose up -d
 ```
 
-That's it. On first run this will:
+To wszystko. Przy pierwszym uruchomieniu Docker:
 
-1. build the `api` image,
-2. start MailHog and Ollama,
-3. pull the LLM weights into a named volume (`ollama-pull` service — this is the slow
-   step the first time, a couple of GB depending on the model),
-4. only then start the API, once the model is actually ready.
+1. zbuduje obraz API,
+2. odpali MailHog i Ollame,
+3. pobierze wagi modelu do wolumenu (serwis `ollama-pull`, to jest ten wolny krok za pierwszym razem, kilka GB w zaleznosci od modelu),
+4. dopiero po tym wystartuje API, jak model bedzie juz gotowy.
 
-Subsequent `docker compose up -d` runs are fast — the model weights persist in the
-`ollama_data` volume, so nothing is re-downloaded.
+Kolejne uruchomienia `docker compose up -d` sa juz szybkie, bo wagi modelu zostaja w wolumenie `ollama_data` i nie sciagaja sie od nowa.
 
-Once it's up:
+Po odpaleniu:
 
 - API: http://localhost:8000
-- Swagger / OpenAPI docs: **http://localhost:8000/api/v1/docs**
-- MailHog web UI (see the emails the agent sent): http://localhost:8025
+- Dokumentacja Swagger: **http://localhost:8000/api/v1/docs**
+- Panel MailHog (widac tu przechwycone maile): http://localhost:8025
 
-### Try it
+### Przykladowe zapytanie
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/route \
@@ -37,16 +31,15 @@ curl -X POST http://localhost:8000/api/v1/route \
   -d '{"email": "jan.nowak@example.com", "message": "Nie dziala mi komputer"}'
 ```
 
-Expected response:
+Odpowiedz:
 
 ```json
 {"routed_to": "it@example.com", "subject": "..."}
 ```
 
-Then open http://localhost:8025 — you'll see the forwarded email in the `it@example.com`
-mailbox, with `Reply-To: jan.nowak@example.com` set correctly.
+Potem wchodzisz na http://localhost:8025 i widzisz przekazana wiadomosc w skrzynce `it@example.com`, z naglowkiem `Reply-To: jan.nowak@example.com` ustawionym poprawnie.
 
-Try a second example to see different routing:
+Drugi przyklad, zeby zobaczyc inny routing:
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/route \
@@ -54,95 +47,53 @@ curl -X POST http://localhost:8000/api/v1/route \
   -d '{"email": "jan.nowak@example.com", "message": "Chcialbym zglosic urlop na jutro"}'
 ```
 
-## Architecture
+## Jak to jest zbudowane
 
 ```
-client --HTTP--> [api: FastAPI]
+klient --HTTP--> [api: FastAPI]
                       |
-                      | 1. chat.completions(tools=[send_email]) over OpenAI-compatible API
+                      | 1. chat.completions(tools=[send_email]) przez OpenAI-kompatybilne API
                       v
-                 [ollama: local LLM, e.g. llama3.2]
+                 [ollama: lokalny model, np. llama3.2]
                       |
-                      | 2. model responds with a tool_call: send_email(to, subject, body)
+                      | 2. model odpowiada tool_callem: send_email(to, subject, body)
                       v
-                 [api parses the tool call]
+                 [api parsuje ten tool call]
                       |
-                      | 3. api sends the actual email via smtplib (Reply-To set from the
-                      |    ORIGINAL request, not from the model)
+                      | 3. api faktycznie wysyla maila przez smtplib (Reply-To ustawiony
+                      |    z ORYGINALNEGO requestu, nie z modelu)
                       v
-                 [mailhog: SMTP :1025 / Web UI :8025]
+                 [mailhog: SMTP :1025 / panel webowy :8025]
 ```
 
-Services (`docker-compose.yml`):
+Serwisy w `docker-compose.yml`:
 
-| service       | role                                                                 |
+| serwis        | co robi                                                              |
 |---------------|-----------------------------------------------------------------------|
-| `ollama`      | runs the LLM, exposes an OpenAI-compatible API on `:11434`            |
-| `ollama-pull` | one-shot job: pulls the model weights into `ollama`'s volume, then exits |
-| `mailhog`     | fake SMTP server + web UI, stands in for the real mail infrastructure |
-| `api`         | FastAPI service; hosts the agent and the HTTP endpoint                |
+| `ollama`      | odpala model, wystawia OpenAI-kompatybilne API na `:11434`            |
+| `ollama-pull` | jednorazowy job, sciaga wagi modelu do wolumenu `ollama`, potem konczy dzialanie |
+| `mailhog`     | fejkowy serwer SMTP + panel webowy, zastepuje prawdziwa poczte        |
+| `api`         | serwis FastAPI, tu siedzi agent i endpoint HTTP                       |
 
-## Key design decisions
+## Decyzje projektowe
 
-- **The tool call *is* the routing decision.** The agent is given exactly one tool,
-  `send_email(to, subject, body)`, with `to` constrained to an enum of the five
-  department addresses. The model doesn't do a separate "classify" step and then a
-  "send" step — picking the tool's `to` argument *is* the classification. This matches
-  the task's requirement that the agent "samodzielnie użyje udostępnionego mu narzędzia
-  do wysłania wiadomości e-mail".
+- **Tool call to jest decyzja o routingu.** Agent dostaje dokladnie jedno narzedzie, `send_email(to, subject, body)`, gdzie `to` jest ograniczone do listy pieciu adresow dzialow. Model nie robi osobno "klasyfikacji" i osobno "wysylki", wybor argumentu `to` w tool callu to jest ta klasyfikacja. To pasuje do wymagania z zadania, ze agent ma samodzielnie uzyc udostepnionego mu narzedzia do wysylki maila.
 
-- **`Reply-To` is never trusted to the model.** The LLM only decides *where* the
-  message goes and how to phrase it. The `Reply-To` header is set deterministically by
-  the API from the `email` field of the original HTTP request. This avoids a class of
-  bugs/prompt-injection risk where the model could set an arbitrary or malformed
-  Reply-To.
+- **Reply-To nigdy nie jest w gestii modelu.** LLM decyduje tylko dokad wyslac wiadomosc i jak ja sformulowac. Naglowek Reply-To ustawiany jest deterministycznie przez API, na podstawie pola `email` z oryginalnego requestu. Dzieki temu model nie moze ustawic dowolnego albo zepsutego Reply-To, co jest wazne tez pod katem prompt injection.
 
-- **Model choice: `llama3.2` (3B) by default.** It's one of the smaller models with
-  solid tool-calling support in Ollama, which keeps the first `docker compose up -d`
-  reasonably fast (~2GB pull) while still handling this task's five-way classification
-  well. For higher routing accuracy, swap in a larger tool-calling model — no code
-  changes needed, just:
+- **Domyslny model to llama3.2 (3B).** To jeden z mniejszych modeli, ktore w Ollamie dobrze radza sobie z tool callingiem, wiec pierwsze `docker compose up -d` nie trwa wiecznosc (pobranie ~2GB). Jak ktos chce wiekszej dokladnosci klasyfikacji, wystarczy podmienic model bez zadnych zmian w kodzie:
 
   ```bash
   OLLAMA_MODEL=qwen2.5:7b docker compose up -d
   ```
 
-- **Retry + graceful fallback, not a hard failure.** Small local models occasionally
-  don't emit a tool call, or emit an invalid one. `agent.route_message()` retries with
-  `tool_choice="required"` then twice with `tool_choice="auto"` (some Ollama/model
-  combinations don't support `"required"`, so that failure is caught and it falls back
-  automatically). If all three attempts fail, the message is routed to
-  `other@example.com` rather than the request failing with a 5xx. This reflects how a
-  production system should treat non-deterministic LLM output — degrade gracefully,
-  don't drop the request.
+- **Retry i graceful fallback zamiast twardego bledu.** Male lokalne modele czasem nie zwroca tool calla albo zwroca zly. Funkcja `route_message()` w `agent.py` probuje najpierw z `tool_choice="required"`, potem dwa razy z `tool_choice="auto"` (bo nie kazda kombinacja Ollama/model wspiera `"required"`, wiec taki blad jest lapany i leci fallback). Jak wszystkie trzy proby zawioda, wiadomosc idzie do `other@example.com` zamiast wywalac blad 5xx. Tak wlasnie powinien zachowywac sie produkcyjny system przy niedeterministycznym outpucie z LLM, ma degradowac sie lagodnie, a nie gubic zgloszenia.
 
-- **Department disambiguation.** The task lists both `human-resources@example.com` and
-  `kadry@example.com`, which overlap in English. The system prompt resolves this by
-  treating `kadry@example.com` as the Polish payroll/leave/absence mailbox (`urlop`,
-  `L4`, `wypłata`, ...) and `human-resources@example.com` as general/policy HR matters —
-  this is a judgment call, documented here so it's easy to challenge or retune (it's a
-  single paragraph in `api/app/agent.py::SYSTEM_PROMPT`).
+- **Rozroznienie human-resources vs kadry.** W zadaniu sa jednoczesnie `human-resources@example.com` i `kadry@example.com`, ktore po angielsku brzmia podobnie. System prompt rozstrzyga to tak: `kadry@example.com` to polska administracja kadrowo-placowa (urlop, L4, wyplata i tym podobne), a `human-resources@example.com` to ogolne sprawy HR (umowy, onboarding, polityka firmy). To jest decyzja uznaniowa, opisana tutaj zeby latwo bylo ja zakwestionowac albo poprawic, to jeden akapit w `api/app/agent.py::SYSTEM_PROMPT`.
 
-- **Tuned against a live model, not just read for plausibility.** The agent was run
-  end-to-end (real HTTP tool-calling round trip, no mocks) against a local LLM serving
-  the same OpenAI-compatible `/v1` API Ollama exposes, using 50 varied/ambiguous
-  Polish (and a couple of English) messages designed to stress the classifier —
-  small talk, off-topic questions, gibberish, sensitive HR cases (mobbing, conflict),
-  security incidents, and messages that plausibly straddle two departments. Zero
-  request failures across the batch (~0.9s/request). This surfaced one real weakness in
-  the first version of the prompt: the model treated `help-desk@example.com` as a
-  catch-all, occasionally routing small talk, off-topic questions, and even benefits/
-  training questions there instead of `human-resources@example.com` or
-  `other@example.com`. `SYSTEM_PROMPT` was tightened to explicitly state that
-  `help-desk@example.com` is not a catch-all and to pin down benefits/training as HR
-  and non-work topics as `other@example.com`; re-running the same 50 messages fixed
-  every one of those misroutes. Since the LLM's output isn't fully deterministic,
-  individual borderline cases (e.g. "printer jammed": IT hardware fault vs. a
-  help-desk equipment ticket) can occasionally flip between runs — expected behavior
-  for a non-deterministic classifier, not a bug, and worth keeping in mind when
-  evaluating routing decisions.
+- **Sprawdzone na zywym modelu, nie tylko przeczytane.** Agenta odpalilem naprawde, end-to-end (prawdziwy HTTP tool calling, zero mockow), przeciwko lokalnemu LLM wystawiajacemu to samo OpenAI-kompatybilne API co Ollama, na 50 roznych, momentami podchwytliwych wiadomosci po polsku i troche po angielsku, tak zeby model musial sie chwile zastanowic: pogaduszki, pytania niezwiazane z firma, bezsensowny tekst, wrazliwe sprawy HR (mobbing, konflikt), zgloszenie phishingu, wiadomosci na styku dwoch dzialow. Zero bledow requestow na calej partii, srednio ok. 0.9s na zapytanie. Ten test wychwycil realny problem w pierwszej wersji promptu: model traktowal `help-desk@example.com` jak worek na wszystko i wrzucal tam czasem pogaduszki, pytania niezwiazane z firma, a nawet pytania o benefity czy szkolenia, zamiast do `human-resources@example.com` albo `other@example.com`. Dopisalem w `SYSTEM_PROMPT` wprost, ze help-desk to nie jest kosz na wszystko, oraz ze benefity/szkolenia to zawsze HR, a tematy niezwiazane z praca to `other`. Po tej poprawce te same 50 wiadomosci przeszlo juz bez tych bledow. Model nie jest w pelni deterministyczny, wiec pojedyncze przypadki na granicy dwoch dzialow (np. "zacieta drukarka": awaria sprzetu czy zgloszenie do help-desk) moga czasem wypasc inaczej miedzy jednym uruchomieniem a drugim, to normalne przy takim klasyfikatorze, a nie blad.
 
-## Project layout
+## Struktura projektu
 
 ```
 docker-compose.yml
@@ -150,33 +101,19 @@ api/
   Dockerfile
   requirements.txt
   app/
-    main.py     — FastAPI app, HTTP endpoint, Swagger config
-    agent.py    — tool schema, system prompt, Ollama call + retry/fallback logic
-    mailer.py   — SMTP delivery via MailHog, Reply-To handling
-    config.py   — environment-based settings
+    main.py     - aplikacja FastAPI, endpoint HTTP, konfiguracja Swaggera
+    agent.py    - schemat narzedzia, system prompt, wywolanie Ollamy, logika retry/fallback
+    mailer.py   - wysylka przez SMTP do MailHoga, obsluga Reply-To
+    config.py   - ustawienia z zmiennych srodowiskowych
 ```
 
-## What was tested without Docker
+## Co bylo testowane bez Dockera
 
-The sandbox used to prepare this PoC does not have Docker installed, so the following
-was verified directly against the real code instead:
+Srodowisko, w ktorym przygotowywalem ten PoC, nie mialo zainstalowanego Dockera, wiec zamiast tego sprawdzilem to co sie dalo bezposrednio na prawdziwym kodzie:
 
-- `docker compose config` — the compose file parses and resolves cleanly.
-- The FastAPI app imports and serves `/api/v1/docs` and `/api/v1/openapi.json` at the
-  required paths, with `/api/v1/route` registered.
-- **Full end-to-end run against a real, locally-hosted LLM** (LM Studio, serving the
-  same OpenAI-compatible `/v1/chat/completions` API that Ollama exposes, so the app
-  code under test is exactly what runs in the container) and a local SMTP capture
-  server standing in for MailHog: single requests, a 50-message ambiguity/load test
-  (see "Tuned against a live model" above), and header inspection all passed —
-  correct routing, correct `Reply-To`, zero request failures, ~0.9s/request.
-- `mailer.send_department_email()` verified against the local debugging SMTP server —
-  `To`, `Reply-To`, `Subject` and body all come through correctly, including Polish
-  diacritics (properly MIME-encoded).
+- `docker compose config` - plik compose parsuje sie i rozwiazuje bez bledow.
+- Aplikacja FastAPI wstaje i serwuje `/api/v1/docs` oraz `/api/v1/openapi.json` pod wymaganymi sciezkami, endpoint `/api/v1/route` jest zarejestrowany.
+- Pelny test end-to-end na prawdziwym, lokalnie hostowanym LLM (LM Studio, wystawiajace to samo OpenAI-kompatybilne API `/v1/chat/completions` co Ollama, wiec testowany jest dokladnie ten sam kod aplikacji co pojdzie do kontenera) oraz lokalny serwer SMTP zastepujacy MailHoga: pojedyncze requesty, test obciazeniowy na 50 wiadomosciach (opisany wyzej), sprawdzenie naglowkow, wszystko przeszlo poprawnie, dobry routing, poprawny Reply-To, zero bledow requestow, srednio ok. 0.9s na zapytanie.
+- Wysylka maila (`mailer.send_department_email()`) sprawdzona na lokalnym serwerze SMTP do debugowania, naglowki To, Reply-To, Subject i tresc przechodza poprawnie, wliczajac polskie znaki diakrytyczne.
 
-What was **not** possible to verify in this environment: the container build itself
-and the `ollama-pull` model-download step, since that requires the Docker daemon.
-Everything downstream of "the model is up and speaking the OpenAI API" has been
-exercised for real; only the Docker plumbing around it is unverified. Recommended
-before final review: run `docker compose up -d` once on a machine with Docker
-installed to confirm the container wiring itself.
+Czego nie dalo sie sprawdzic w tym srodowisku: samego budowania kontenerow i kroku pobierania modelu przez `ollama-pull`, bo do tego potrzebny jest dzialajacy Docker. Wszystko co jest "za" modelem zostalo realnie przetestowane, nieprzetestowana zostala tylko sama instalacja Dockerowa dookola. Warto przed finalnym review odpalic raz `docker compose up -d` na maszynie z Dockerem, zeby potwierdzic ze caly kontenerowy montaz dziala.
