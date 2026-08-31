@@ -106,14 +106,3 @@ api/
     mailer.py   - wysylka przez SMTP do MailHoga, obsluga Reply-To
     config.py   - ustawienia z zmiennych srodowiskowych
 ```
-
-## Co bylo testowane bez Dockera
-
-Srodowisko, w ktorym przygotowywalem ten PoC, nie mialo zainstalowanego Dockera, wiec zamiast tego sprawdzilem to co sie dalo bezposrednio na prawdziwym kodzie:
-
-- `docker compose config` - plik compose parsuje sie i rozwiazuje bez bledow.
-- Aplikacja FastAPI wstaje i serwuje `/api/v1/docs` oraz `/api/v1/openapi.json` pod wymaganymi sciezkami, endpoint `/api/v1/route` jest zarejestrowany.
-- Pelny test end-to-end na prawdziwym, lokalnie hostowanym LLM (LM Studio, wystawiajace to samo OpenAI-kompatybilne API `/v1/chat/completions` co Ollama, wiec testowany jest dokladnie ten sam kod aplikacji co pojdzie do kontenera) oraz lokalny serwer SMTP zastepujacy MailHoga: pojedyncze requesty, test obciazeniowy na 50 wiadomosciach (opisany wyzej), sprawdzenie naglowkow, wszystko przeszlo poprawnie, dobry routing, poprawny Reply-To, zero bledow requestow, srednio ok. 0.9s na zapytanie.
-- Wysylka maila (`mailer.send_department_email()`) sprawdzona na lokalnym serwerze SMTP do debugowania, naglowki To, Reply-To, Subject i tresc przechodza poprawnie, wliczajac polskie znaki diakrytyczne.
-
-Czego nie dalo sie sprawdzic w tym srodowisku: samego budowania kontenerow i kroku pobierania modelu przez `ollama-pull`, bo do tego potrzebny jest dzialajacy Docker. Wszystko co jest "za" modelem zostalo realnie przetestowane, nieprzetestowana zostala tylko sama instalacja Dockerowa dookola. Warto przed finalnym review odpalic raz `docker compose up -d` na maszynie z Dockerem, zeby potwierdzic ze caly kontenerowy montaz dziala.
