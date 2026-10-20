@@ -1,108 +1,174 @@
-# AI Message Router - Proof of Concept
+# AI Mail Router
 
-Mikroserwis, ktory dziala jak inteligentny router wiadomosci. Przyjmuje krotki tekst od pracownika (np. "nie dziala mi komputer"), wysyla go do lokalnie hostowanego modelu jezykowego (Ollama), a model poprzez prawdziwe tool/function calling decyduje do jakiego dzialu to przekierowac i sam wywoluje narzedzie, ktore wysyla maila. Mail jest przechwytywany przez MailHog, wiec nic nie wychodzi na zewnatrz, wszystko mozna podejrzec w panelu webowym.
+**Inteligentny router wiadomości dla firm.** Pracownik pisze zwykłym językiem („nie działa mi komputer”, „chcę zgłosić urlop na piątek”), a AI samo decyduje, który dział ma się tym zająć, i przekazuje mu wiadomość mailem. Odpowiedź od działu trafia prosto do nadawcy.
 
-## Jak to odpalic
+- 🏢 **Działy konfigurujesz w jednym pliku YAML.** Nie trzeba ruszać kodu.
+- 🔒 **Domyślnie działa w 100% lokalnie** (Ollama + testowa skrzynka MailHog). Żadne dane nie wychodzą z firmy.
+- 🔌 **Dowolny model AI**: Ollama, OpenAI, Groq, OpenRouter, LM Studio, czyli wszystko, co ma API zgodne z OpenAI.
+- 📬 **Prawdziwa poczta**: Gmail, Microsoft 365 albo dowolny serwer SMTP.
+- 🛡️ **Odporny na błędy modelu.** Jeśli AI się pomyli, wiadomość trafia do działu awaryjnego i nic nie ginie.
+- 🧩 **Proste REST API** ze Swaggerem. Łatwo podpiąć formularz, intranet, bota na Slacku czy własną aplikację.
+
+Licencja **MIT**: możesz używać, zmieniać i wdrażać komercyjnie, także u klientów.
+
+---
+
+## Szybki start (2 minuty)
+
+Wymagany jest tylko [Docker](https://docs.docker.com/get-docker/).
 
 ```bash
+git clone https://github.com/lazowskim2/wskz-poc.git ai-mail-router
+cd ai-mail-router
 docker compose up -d
 ```
 
-To wszystko. Przy pierwszym uruchomieniu Docker:
+Za pierwszym razem Docker pobierze model AI (~2 GB), a kolejne starty są szybkie. Po uruchomieniu masz:
 
-1. zbuduje obraz API,
-2. odpali MailHog i Ollame,
-3. pobierze wagi modelu do wolumenu (serwis `ollama-pull`, to jest ten wolny krok za pierwszym razem, kilka GB w zaleznosci od modelu),
-4. dopiero po tym wystartuje API, jak model bedzie juz gotowy.
+| Co | Gdzie |
+|---|---|
+| Dokumentacja API (Swagger) | http://localhost:8000/api/v1/docs |
+| Testowa skrzynka (podgląd wysłanych maili) | http://localhost:8025 |
 
-Kolejne uruchomienia `docker compose up -d` sa juz szybkie, bo wagi modelu zostaja w wolumenie `ollama_data` i nie sciagaja sie od nowa.
-
-Po odpaleniu:
-
-- API: http://localhost:8000
-- Dokumentacja Swagger: **http://localhost:8000/api/v1/docs**
-- Panel MailHog (widac tu przechwycone maile): http://localhost:8025
-
-### Przykladowe zapytanie
+Wyślij testową wiadomość:
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/route \
   -H "Content-Type: application/json" \
-  -d '{"email": "jan.nowak@example.com", "message": "Nie dziala mi komputer"}'
+  -d '{"email": "jan.nowak@example.com", "message": "Nie działa mi komputer"}'
 ```
-
-Odpowiedz:
 
 ```json
-{"routed_to": "it@example.com", "subject": "..."}
+{"routed_to": "it@example.com", "subject": "Awaria komputera"}
 ```
 
-Potem wchodzisz na http://localhost:8025 i widzisz przekazana wiadomosc w skrzynce `it@example.com`, z naglowkiem `Reply-To: jan.nowak@example.com` ustawionym poprawnie.
+Na http://localhost:8025 zobaczysz maila w skrzynce `it@example.com` z nagłówkiem `Reply-To: jan.nowak@example.com`, więc dział IT odpowiada bezpośrednio pracownikowi.
 
-Drugi przyklad, zeby zobaczyc inny routing:
+---
+
+## Dopasowanie do Twojej firmy
+
+### 1. Działy: `departments.yaml`
+
+```yaml
+fallback: biuro@twojafirma.pl
+
+departments:
+  - email: it@twojafirma.pl
+    name: IT
+    description: >
+      Awarie komputerów, drukarek, sieci, hasła, podejrzane maile (phishing).
+
+  - email: ksiegowosc@twojafirma.pl
+    name: Księgowość
+    description: >
+      Faktury, zwroty kosztów, delegacje. NIE wypłaty (to kadry).
+
+  - email: biuro@twojafirma.pl
+    name: Biuro
+    description: >
+      Wszystko, co nie pasuje do innych działów.
+```
+
+Działów może być dowolnie dużo. **Najważniejsze jest pole `description`**: opisz w nim, co trafia do działu, a co *nie* trafia. Od tego zależy trafność routingu. Po zmianie wystarczy:
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/route \
-  -H "Content-Type: application/json" \
-  -d '{"email": "jan.nowak@example.com", "message": "Chcialbym zglosic urlop na jutro"}'
+docker compose restart api
 ```
 
-## Jak to jest zbudowane
+### 2. Poczta, model AI, zabezpieczenia: `.env`
 
-```
-klient --HTTP--> [api: FastAPI]
-                      |
-                      | 1. chat.completions(tools=[send_email]) przez OpenAI-kompatybilne API
-                      v
-                 [ollama: lokalny model, np. llama3.2]
-                      |
-                      | 2. model odpowiada tool_callem: send_email(to, subject, body)
-                      v
-                 [api parsuje ten tool call]
-                      |
-                      | 3. api faktycznie wysyla maila przez smtplib (Reply-To ustawiony
-                      |    z ORYGINALNEGO requestu, nie z modelu)
-                      v
-                 [mailhog: SMTP :1025 / panel webowy :8025]
+```bash
+cp .env.example .env
 ```
 
-Serwisy w `docker-compose.yml`:
+Przykład z prawdziwą pocztą (Microsoft 365) i modelem w chmurze:
 
-| serwis        | co robi                                                              |
-|---------------|-----------------------------------------------------------------------|
-| `ollama`      | odpala model, wystawia OpenAI-kompatybilne API na `:11434`            |
-| `ollama-pull` | jednorazowy job, sciaga wagi modelu do wolumenu `ollama`, potem konczy dzialanie |
-| `mailhog`     | fejkowy serwer SMTP + panel webowy, zastepuje prawdziwa poczte        |
-| `api`         | serwis FastAPI, tu siedzi agent i endpoint HTTP                       |
+```env
+SMTP_HOST=smtp.office365.com
+SMTP_PORT=587
+SMTP_SECURITY=starttls
+SMTP_USER=router@twojafirma.pl
+SMTP_PASSWORD=...
+SMTP_FROM=router@twojafirma.pl
 
-## Decyzje projektowe
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=gpt-4o-mini
+LLM_API_KEY=sk-...
 
-- **Tool call to jest decyzja o routingu.** Agent dostaje dokladnie jedno narzedzie, `send_email(to, subject, body)`, gdzie `to` jest ograniczone do listy pieciu adresow dzialow. Model nie robi osobno "klasyfikacji" i osobno "wysylki", wybor argumentu `to` w tool callu to jest ta klasyfikacja. To pasuje do wymagania z zadania, ze agent ma samodzielnie uzyc udostepnionego mu narzedzia do wysylki maila.
+API_KEY=dlugi-losowy-klucz
+```
 
-- **Reply-To nigdy nie jest w gestii modelu.** LLM decyduje tylko dokad wyslac wiadomosc i jak ja sformulowac. Naglowek Reply-To ustawiany jest deterministycznie przez API, na podstawie pola `email` z oryginalnego requestu. Dzieki temu model nie moze ustawic dowolnego albo zepsutego Reply-To, co jest wazne tez pod katem prompt injection.
+Gdy `API_KEY` jest ustawiony, każde zapytanie musi mieć nagłówek `X-API-Key`. Wszystkie opcje są opisane w [`.env.example`](.env.example).
 
-- **Domyslny model to llama3.2 (3B).** To jeden z mniejszych modeli, ktore w Ollamie dobrze radza sobie z tool callingiem, wiec pierwsze `docker compose up -d` nie trwa wiecznosc (pobranie ~2GB). Jak ktos chce wiekszej dokladnosci klasyfikacji, wystarczy podmienic model bez zadnych zmian w kodzie:
+> 💡 Chcesz dokładniejszy lokalny model? Ustaw `LLM_MODEL=qwen2.5:7b`. Ollama pobierze go sama przy starcie.
 
-  ```bash
-  OLLAMA_MODEL=qwen2.5:7b docker compose up -d
-  ```
+---
 
-- **Retry i graceful fallback zamiast twardego bledu.** Male lokalne modele czasem nie zwroca tool calla albo zwroca zly. Funkcja `route_message()` w `agent.py` probuje najpierw z `tool_choice="required"`, potem dwa razy z `tool_choice="auto"` (bo nie kazda kombinacja Ollama/model wspiera `"required"`, wiec taki blad jest lapany i leci fallback). Jak wszystkie trzy proby zawioda, wiadomosc idzie do `other@example.com` zamiast wywalac blad 5xx. Tak wlasnie powinien zachowywac sie produkcyjny system przy niedeterministycznym outpucie z LLM, ma degradowac sie lagodnie, a nie gubic zgloszenia.
+## API
 
-- **Rozroznienie human-resources vs kadry.** W zadaniu sa jednoczesnie `human-resources@example.com` i `kadry@example.com`, ktore po angielsku brzmia podobnie. System prompt rozstrzyga to tak: `kadry@example.com` to polska administracja kadrowo-placowa (urlop, L4, wyplata i tym podobne), a `human-resources@example.com` to ogolne sprawy HR (umowy, onboarding, polityka firmy). To jest decyzja uznaniowa, opisana tutaj zeby latwo bylo ja zakwestionowac albo poprawic, to jeden akapit w `api/app/agent.py::SYSTEM_PROMPT`.
+| Metoda | Ścieżka | Opis |
+|---|---|---|
+| `POST` | `/api/v1/route` | Przyjmuje `{email, message}`, kieruje wiadomość do działu i wysyła maila |
+| `GET` | `/api/v1/departments` | Lista skonfigurowanych działów (np. do formularza w intranecie) |
+| `GET` | `/health` | Healthcheck |
 
-- **Sprawdzone na zywym modelu, nie tylko przeczytane.** Agenta odpalilem naprawde, end-to-end (prawdziwy HTTP tool calling, zero mockow), przeciwko lokalnemu LLM wystawiajacemu to samo OpenAI-kompatybilne API co Ollama, na 50 roznych, momentami podchwytliwych wiadomosci po polsku i troche po angielsku, tak zeby model musial sie chwile zastanowic: pogaduszki, pytania niezwiazane z firma, bezsensowny tekst, wrazliwe sprawy HR (mobbing, konflikt), zgloszenie phishingu, wiadomosci na styku dwoch dzialow. Zero bledow requestow na calej partii, srednio ok. 0.9s na zapytanie. Ten test wychwycil realny problem w pierwszej wersji promptu: model traktowal `help-desk@example.com` jak worek na wszystko i wrzucal tam czasem pogaduszki, pytania niezwiazane z firma, a nawet pytania o benefity czy szkolenia, zamiast do `human-resources@example.com` albo `other@example.com`. Dopisalem w `SYSTEM_PROMPT` wprost, ze help-desk to nie jest kosz na wszystko, oraz ze benefity/szkolenia to zawsze HR, a tematy niezwiazane z praca to `other`. Po tej poprawce te same 50 wiadomosci przeszlo juz bez tych bledow. Model nie jest w pelni deterministyczny, wiec pojedyncze przypadki na granicy dwoch dzialow (np. "zacieta drukarka": awaria sprzetu czy zgloszenie do help-desk) moga czasem wypasc inaczej miedzy jednym uruchomieniem a drugim, to normalne przy takim klasyfikatorze, a nie blad.
+---
+
+## Jak to działa
+
+```
+formularz / aplikacja / bot
+          │  POST /api/v1/route
+          ▼
+   [API: FastAPI] ── departments.yaml ──► prompt + lista dozwolonych adresów
+          │
+          │ 1. model dostaje jedno narzędzie: send_email(to, subject, body)
+          ▼
+   [model AI: Ollama / OpenAI / ...]
+          │
+          │ 2. model wywołuje narzędzie i wybiera dział (to = decyzja o routingu)
+          ▼
+   [API waliduje decyzję]  ── zły adres / brak odpowiedzi ──► retry ──► dział awaryjny
+          │
+          │ 3. API wysyła maila przez SMTP, Reply-To = nadawca z requestu
+          ▼
+   [skrzynka działu]
+```
+
+### Decyzje projektowe
+
+- **Wywołanie narzędzia jest decyzją o routingu.** Model nie robi osobno klasyfikacji i wysyłki. Dostaje jedno narzędzie `send_email`, w którym pole `to` jest ograniczone do adresów z `departments.yaml`. Nie da się wysłać maila poza listę.
+- **Reply-To nigdy nie pochodzi od modelu.** Nagłówek ustawia API na podstawie pola `email` z zapytania. Chroni to przed prompt injection, bo nikt nie przekona modelu, żeby odpowiedzi szły na obcy adres.
+- **Łagodna degradacja zamiast błędu.** Małe lokalne modele czasem nie wywołają narzędzia albo podadzą zły adres. Router próbuje 3 razy (najpierw `tool_choice="required"`, potem `"auto"`), a jeśli to nie wystarczy, wysyła wiadomość do działu awaryjnego. Żadne zgłoszenie nie ginie.
+- **Przetestowane na żywym modelu.** Domyślną konfigurację sprawdzono na 50 różnych, także podchwytliwych wiadomościach po polsku i angielsku: small talk, bezsens, mobbing, phishing, sprawy na styku dwóch działów. Zero błędnych zapytań, średnio ~0,9 s na wiadomość. Przypadki graniczne (np. „zacięta drukarka”: IT czy help desk?) mogą czasem wypaść różnie, bo to klasyfikator AI. Rozwiązaniem jest doprecyzowanie `description`.
+
+---
 
 ## Struktura projektu
 
 ```
+departments.yaml      - działy (edytuj pod swoją firmę)
+.env.example          - konfiguracja poczty, modelu i klucza API
 docker-compose.yml
-api/
-  Dockerfile
-  requirements.txt
-  app/
-    main.py     - aplikacja FastAPI, endpoint HTTP, konfiguracja Swaggera
-    agent.py    - schemat narzedzia, system prompt, wywolanie Ollamy, logika retry/fallback
-    mailer.py   - wysylka przez SMTP do MailHoga, obsluga Reply-To
-    config.py   - ustawienia z zmiennych srodowiskowych
+api/app/
+  main.py             - endpointy HTTP, Swagger, klucz API
+  agent.py            - prompt i narzędzie budowane z departments.yaml, retry/fallback
+  departments.py      - wczytywanie i walidacja departments.yaml
+  mailer.py           - wysyłka SMTP (plain / STARTTLS / SSL), Reply-To
+  config.py           - ustawienia ze zmiennych środowiskowych
 ```
+
+---
+
+## 🇬🇧 In English
+
+**AI Mail Router** routes free-text employee messages to the right department by email. An LLM picks the department through tool calling, and the reply goes straight back to the sender. Departments are defined in `departments.yaml`, the LLM can be any OpenAI-compatible API (local Ollama by default), and SMTP works with Gmail, Microsoft 365 or any server. Run `docker compose up -d` and open http://localhost:8000/api/v1/docs. MIT licensed.
+
+---
+
+## Licencja
+
+[MIT](LICENSE) © AImployee ([aimployee.pl](https://aimployee.pl))
+
+Potrzebujesz wdrożenia w firmie, integracji z helpdeskiem albo wersji czytającej skrzynkę pocztową? Napisz: [aimployee.pl](https://aimployee.pl)

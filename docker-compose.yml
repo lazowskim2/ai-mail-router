@@ -18,7 +18,7 @@ services:
     environment:
       OLLAMA_HOST: "ollama:11434"
     entrypoint: ["ollama"]
-    command: ["pull", "${OLLAMA_MODEL:-llama3.2}"]
+    command: ["pull", "${LLM_MODEL:-llama3.2}"]
     depends_on:
       ollama:
         condition: service_healthy
@@ -33,11 +33,19 @@ services:
   api:
     build: ./api
     environment:
-      OLLAMA_BASE_URL: "http://ollama:11434/v1"
-      OLLAMA_MODEL: "${OLLAMA_MODEL:-llama3.2}"
-      SMTP_HOST: "mailhog"
-      SMTP_PORT: "1025"
-      SMTP_FROM: "ai-router@example.com"
+      LLM_BASE_URL: "${LLM_BASE_URL:-http://ollama:11434/v1}"
+      LLM_MODEL: "${LLM_MODEL:-llama3.2}"
+      LLM_API_KEY: "${LLM_API_KEY:-ollama}"
+      SMTP_HOST: "${SMTP_HOST:-mailhog}"
+      SMTP_PORT: "${SMTP_PORT:-1025}"
+      SMTP_FROM: "${SMTP_FROM:-ai-router@example.com}"
+      SMTP_USER: "${SMTP_USER:-}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
+      SMTP_SECURITY: "${SMTP_SECURITY:-none}"
+      API_KEY: "${API_KEY:-}"
+      DEPARTMENTS_FILE: "/config/departments.yaml"
+    volumes:
+      - ./departments.yaml:/config/departments.yaml:ro
     ports:
       - "8000:8000"
     depends_on:
