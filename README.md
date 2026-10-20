@@ -18,7 +18,7 @@ Licencja **MIT**: możesz używać, zmieniać i wdrażać komercyjnie, także u 
 Wymagany jest tylko [Docker](https://docs.docker.com/get-docker/).
 
 ```bash
-git clone https://github.com/lazowskim2/wskz-poc.git ai-mail-router
+git clone https://github.com/lazowskim2/ai-mail-router.git
 cd ai-mail-router
 docker compose up -d
 ```
