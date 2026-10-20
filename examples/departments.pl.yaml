@@ -1,0 +1,50 @@
+# Przyklad konfiguracji dla polskiej firmy. Uzycie:
+#   cp examples/departments.pl.yaml departments.yaml && docker compose restart api
+#
+# Lista dzialow, do ktorych router moze przekierowac wiadomosc.
+# Edytuj ten plik pod swoja firme -- zmiany nie wymagaja ruszania kodu,
+# wystarczy restart kontenera:  docker compose restart api
+#
+# Kazdy dzial ma:
+#   email        - adres, na ktory trafi wiadomosc
+#   name         - krotka nazwa (widoczna w API i logach)
+#   description  - opis dla modelu AI: CO tu trafia, a czego tu NIE wysylac.
+#                  To najwazniejsze pole -- od niego zalezy jakosc routingu.
+#
+# fallback: dzial, do ktorego trafia wszystko, czego model nie umie przypisac
+#           (albo gdy model zawiedzie). Musi byc jednym z adresow ponizej.
+
+fallback: other@example.com
+
+departments:
+  - email: it@example.com
+    name: IT
+    description: >
+      Problemy techniczne: komputer, sprzet, oprogramowanie, siec, drukarki,
+      konta i hasla, a takze incydenty bezpieczenstwa (np. podejrzany mail / phishing).
+
+  - email: help-desk@example.com
+    name: Help Desk
+    description: >
+      Konkretne prosby o wsparcie, ktore nie sa awaria IT: zamowienie sprzetu
+      (mysz, sluchawki, laptop), dostep do systemow wewnetrznych, pytania
+      "jak uzyc narzedzia X". To NIE jest worek na wszystko.
+
+  - email: human-resources@example.com
+    name: HR
+    description: >
+      Ogolne sprawy HR: umowy, onboarding, konflikty i zachowanie w miejscu pracy,
+      benefity (np. karta sportowa), ubezpieczenia, szkolenia, rekrutacja,
+      oceny okresowe. Benefity i szkolenia ZAWSZE tutaj.
+
+  - email: kadry@example.com
+    name: Kadry i place
+    description: >
+      Administracja kadrowo-placowa: urlop, zwolnienie lekarskie / L4, wyplata,
+      pasek wynagrodzen. NIE obejmuje zwrotu kosztow delegacji.
+
+  - email: other@example.com
+    name: Inne
+    description: >
+      Wszystko inne: tematy niezwiazane z firma, small talk, podziekowania bez
+      prosby, niezrozumialy tekst, albo sprawy niepasujace do zadnego dzialu.

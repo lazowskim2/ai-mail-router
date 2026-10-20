@@ -1,21 +1,24 @@
 # AI Mail Router
 
-**Inteligentny router wiadomości dla firm.** Pracownik pisze zwykłym językiem („nie działa mi komputer”, „chcę zgłosić urlop na piątek”), a AI samo decyduje, który dział ma się tym zająć, i przekazuje mu wiadomość mailem. Odpowiedź od działu trafia prosto do nadawcy.
+**English** | [Polski](README.pl.md)
 
-- 🏢 **Działy konfigurujesz w jednym pliku YAML.** Nie trzeba ruszać kodu.
-- 🔒 **Domyślnie działa w 100% lokalnie** (Ollama + testowa skrzynka MailHog). Żadne dane nie wychodzą z firmy.
-- 🔌 **Dowolny model AI**: Ollama, OpenAI, Groq, OpenRouter, LM Studio, czyli wszystko, co ma API zgodne z OpenAI.
-- 📬 **Prawdziwa poczta**: Gmail, Microsoft 365 albo dowolny serwer SMTP.
-- 🛡️ **Odporny na błędy modelu.** Jeśli AI się pomyli, wiadomość trafia do działu awaryjnego i nic nie ginie.
-- 🧩 **Proste REST API** ze Swaggerem. Łatwo podpiąć formularz, intranet, bota na Slacku czy własną aplikację.
+**An AI message router for companies.** Employees write in plain language ("my laptop won't turn on", "I'd like to take Friday off"). The AI decides which department should handle it and forwards the message there by email. The department's reply goes straight back to the employee.
 
-Licencja **MIT**: możesz używać, zmieniać i wdrażać komercyjnie, także u klientów.
+- 🏢 **Departments live in one YAML file.** No code changes needed.
+- 🔒 **Runs 100% locally by default** (Ollama + MailHog test inbox). No data leaves your company.
+- 🔌 **Any AI model**: Ollama, OpenAI, Groq, OpenRouter, LM Studio, or anything else with an OpenAI-compatible API.
+- 📬 **Real email**: Gmail, Microsoft 365 or any SMTP server.
+- 🛡️ **Resilient to model mistakes.** If the AI gets it wrong, the message goes to a fallback department and nothing is lost.
+- 🌍 **Multilingual.** It understands messages in any language the model speaks and replies in the same language. Tested in English and Polish.
+- 🧩 **Simple REST API** with Swagger. Easy to plug into a web form, an intranet, a Slack bot or your own app.
+
+**MIT licensed**: use it, modify it and deploy it commercially, including for clients.
 
 ---
 
-## Szybki start (2 minuty)
+## Quick start (2 minutes)
 
-Wymagany jest tylko [Docker](https://docs.docker.com/get-docker/).
+All you need is [Docker](https://docs.docker.com/get-docker/).
 
 ```bash
 git clone https://github.com/lazowskim2/ai-mail-router.git
@@ -23,152 +26,147 @@ cd ai-mail-router
 docker compose up -d
 ```
 
-Za pierwszym razem Docker pobierze model AI (~2 GB), a kolejne starty są szybkie. Po uruchomieniu masz:
+On the first run Docker downloads the AI model (~2 GB). Later starts are fast. Once it's up:
 
-| Co | Gdzie |
+| What | Where |
 |---|---|
-| Dokumentacja API (Swagger) | http://localhost:8000/api/v1/docs |
-| Testowa skrzynka (podgląd wysłanych maili) | http://localhost:8025 |
+| API docs (Swagger) | http://localhost:8000/api/v1/docs |
+| Test inbox (preview of sent emails) | http://localhost:8025 |
 
-Wyślij testową wiadomość:
+Send a test message:
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/route \
   -H "Content-Type: application/json" \
-  -d '{"email": "jan.nowak@example.com", "message": "Nie działa mi komputer"}'
+  -d '{"email": "john.smith@example.com", "message": "My computer won'\''t start"}'
 ```
 
 ```json
-{"routed_to": "it@example.com", "subject": "Awaria komputera"}
+{"routed_to": "it@example.com", "subject": "Computer won't start"}
 ```
 
-Na http://localhost:8025 zobaczysz maila w skrzynce `it@example.com` z nagłówkiem `Reply-To: jan.nowak@example.com`, więc dział IT odpowiada bezpośrednio pracownikowi.
+At http://localhost:8025 you'll see the email in the `it@example.com` inbox with a `Reply-To: john.smith@example.com` header, so IT replies directly to the employee.
 
 ---
 
-## Dopasowanie do Twojej firmy
+## Make it yours
 
-### 1. Działy: `departments.yaml`
+### 1. Departments: `departments.yaml`
 
 ```yaml
-fallback: biuro@twojafirma.pl
+fallback: office@yourcompany.com
 
 departments:
-  - email: it@twojafirma.pl
+  - email: it@yourcompany.com
     name: IT
     description: >
-      Awarie komputerów, drukarek, sieci, hasła, podejrzane maile (phishing).
+      Broken computers, printers, network, passwords, suspicious emails (phishing).
 
-  - email: ksiegowosc@twojafirma.pl
-    name: Księgowość
+  - email: accounting@yourcompany.com
+    name: Accounting
     description: >
-      Faktury, zwroty kosztów, delegacje. NIE wypłaty (to kadry).
+      Invoices, expense reimbursement, business travel. NOT salaries (that's payroll).
 
-  - email: biuro@twojafirma.pl
-    name: Biuro
+  - email: office@yourcompany.com
+    name: Office
     description: >
-      Wszystko, co nie pasuje do innych działów.
+      Anything that doesn't fit another department.
 ```
 
-Działów może być dowolnie dużo. **Najważniejsze jest pole `description`**: opisz w nim, co trafia do działu, a co *nie* trafia. Od tego zależy trafność routingu. Po zmianie wystarczy:
+You can have as many departments as you like. **The `description` field matters most**: say what belongs in the department and what does *not*. Routing accuracy depends on it. A ready-made Polish config is in [`examples/departments.pl.yaml`](examples/departments.pl.yaml). After editing, run:
 
 ```bash
 docker compose restart api
 ```
 
-### 2. Poczta, model AI, zabezpieczenia: `.env`
+### 2. Email, AI model and security: `.env`
 
 ```bash
 cp .env.example .env
 ```
 
-Przykład z prawdziwą pocztą (Microsoft 365) i modelem w chmurze:
+Example with real email (Microsoft 365) and a cloud model:
 
 ```env
 SMTP_HOST=smtp.office365.com
 SMTP_PORT=587
 SMTP_SECURITY=starttls
-SMTP_USER=router@twojafirma.pl
+SMTP_USER=router@yourcompany.com
 SMTP_PASSWORD=...
-SMTP_FROM=router@twojafirma.pl
+SMTP_FROM=router@yourcompany.com
 
 LLM_BASE_URL=https://api.openai.com/v1
 LLM_MODEL=gpt-4o-mini
 LLM_API_KEY=sk-...
 
-API_KEY=dlugi-losowy-klucz
+API_KEY=a-long-random-key
 ```
 
-Gdy `API_KEY` jest ustawiony, każde zapytanie musi mieć nagłówek `X-API-Key`. Wszystkie opcje są opisane w [`.env.example`](.env.example).
+When `API_KEY` is set, every request must include an `X-API-Key` header. All options are documented in [`.env.example`](.env.example).
 
-> 💡 Chcesz dokładniejszy lokalny model? Ustaw `LLM_MODEL=qwen2.5:7b`. Ollama pobierze go sama przy starcie.
+> 💡 Want a more accurate local model? Set `LLM_MODEL=qwen2.5:7b` and Ollama will pull it on startup.
 
 ---
 
 ## API
 
-| Metoda | Ścieżka | Opis |
+| Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/v1/route` | Przyjmuje `{email, message}`, kieruje wiadomość do działu i wysyła maila |
-| `GET` | `/api/v1/departments` | Lista skonfigurowanych działów (np. do formularza w intranecie) |
-| `GET` | `/health` | Healthcheck |
+| `POST` | `/api/v1/route` | Takes `{email, message}`, picks a department and sends the email |
+| `GET` | `/api/v1/departments` | Lists configured departments (e.g. for an intranet form) |
+| `GET` | `/health` | Health check |
 
 ---
 
-## Jak to działa
+## How it works
 
 ```
-formularz / aplikacja / bot
+web form / app / bot
           │  POST /api/v1/route
           ▼
-   [API: FastAPI] ── departments.yaml ──► prompt + lista dozwolonych adresów
+   [API: FastAPI] ── departments.yaml ──► prompt + list of allowed addresses
           │
-          │ 1. model dostaje jedno narzędzie: send_email(to, subject, body)
+          │ 1. the model gets a single tool: send_email(to, subject, body)
           ▼
-   [model AI: Ollama / OpenAI / ...]
+   [AI model: Ollama / OpenAI / ...]
           │
-          │ 2. model wywołuje narzędzie i wybiera dział (to = decyzja o routingu)
+          │ 2. the model calls the tool and picks a department (to = routing decision)
           ▼
-   [API waliduje decyzję]  ── zły adres / brak odpowiedzi ──► retry ──► dział awaryjny
+   [API validates the decision]  ── bad address / no answer ──► retry ──► fallback department
           │
-          │ 3. API wysyła maila przez SMTP, Reply-To = nadawca z requestu
+          │ 3. API sends the email over SMTP, Reply-To = sender from the request
           ▼
-   [skrzynka działu]
+   [department inbox]
 ```
 
-### Decyzje projektowe
+### Design decisions
 
-- **Wywołanie narzędzia jest decyzją o routingu.** Model nie robi osobno klasyfikacji i wysyłki. Dostaje jedno narzędzie `send_email`, w którym pole `to` jest ograniczone do adresów z `departments.yaml`. Nie da się wysłać maila poza listę.
-- **Reply-To nigdy nie pochodzi od modelu.** Nagłówek ustawia API na podstawie pola `email` z zapytania. Chroni to przed prompt injection, bo nikt nie przekona modelu, żeby odpowiedzi szły na obcy adres.
-- **Łagodna degradacja zamiast błędu.** Małe lokalne modele czasem nie wywołają narzędzia albo podadzą zły adres. Router próbuje 3 razy (najpierw `tool_choice="required"`, potem `"auto"`), a jeśli to nie wystarczy, wysyła wiadomość do działu awaryjnego. Żadne zgłoszenie nie ginie.
-- **Przetestowane na żywym modelu.** Domyślną konfigurację sprawdzono na 50 różnych, także podchwytliwych wiadomościach po polsku i angielsku: small talk, bezsens, mobbing, phishing, sprawy na styku dwóch działów. Zero błędnych zapytań, średnio ~0,9 s na wiadomość. Przypadki graniczne (np. „zacięta drukarka”: IT czy help desk?) mogą czasem wypaść różnie, bo to klasyfikator AI. Rozwiązaniem jest doprecyzowanie `description`.
+- **The tool call is the routing decision.** The model doesn't classify and send in separate steps. It gets one tool, `send_email`, whose `to` field is restricted to the addresses in `departments.yaml`. It cannot send email outside that list.
+- **Reply-To never comes from the model.** The API sets the header from the `email` field of the request. This blocks prompt injection: no one can talk the model into sending replies to a foreign address.
+- **Graceful degradation instead of errors.** Small local models sometimes skip the tool call or return a wrong address. The router tries 3 times (first with `tool_choice="required"`, then `"auto"`), and if that fails it sends the message to the fallback department. No request is lost.
+- **Tested against a live model.** The default setup was run against 50 varied, sometimes tricky messages in Polish and English: small talk, gibberish, harassment reports, phishing, cases on the border of two departments. Zero failed requests, ~0.9 s per message on average. Borderline cases (e.g. "printer jammed": IT or help desk?) can occasionally go either way, since this is an AI classifier. The fix is a sharper `description`.
 
 ---
 
-## Struktura projektu
+## Project structure
 
 ```
-departments.yaml      - działy (edytuj pod swoją firmę)
-.env.example          - konfiguracja poczty, modelu i klucza API
+departments.yaml      - departments (edit for your company)
+examples/             - ready-made configs (e.g. Polish)
+.env.example          - email, model and API key settings
 docker-compose.yml
 api/app/
-  main.py             - endpointy HTTP, Swagger, klucz API
-  agent.py            - prompt i narzędzie budowane z departments.yaml, retry/fallback
-  departments.py      - wczytywanie i walidacja departments.yaml
-  mailer.py           - wysyłka SMTP (plain / STARTTLS / SSL), Reply-To
-  config.py           - ustawienia ze zmiennych środowiskowych
+  main.py             - HTTP endpoints, Swagger, API key
+  agent.py            - prompt and tool built from departments.yaml, retry/fallback
+  departments.py      - loads and validates departments.yaml
+  mailer.py           - SMTP sending (plain / STARTTLS / SSL), Reply-To
+  config.py           - settings from environment variables
 ```
 
 ---
 
-## 🇬🇧 In English
-
-**AI Mail Router** routes free-text employee messages to the right department by email. An LLM picks the department through tool calling, and the reply goes straight back to the sender. Departments are defined in `departments.yaml`, the LLM can be any OpenAI-compatible API (local Ollama by default), and SMTP works with Gmail, Microsoft 365 or any server. Run `docker compose up -d` and open http://localhost:8000/api/v1/docs. MIT licensed.
-
----
-
-## Licencja
+## License
 
 [MIT](LICENSE) © AImployee ([aimployee.pl](https://aimployee.pl))
 
-Potrzebujesz wdrożenia w firmie, integracji z helpdeskiem albo wersji czytającej skrzynkę pocztową? Napisz: [aimployee.pl](https://aimployee.pl)
+Need a deployment in your company, a helpdesk integration, or a version that reads a shared mailbox? Get in touch: [aimployee.pl](https://aimployee.pl)

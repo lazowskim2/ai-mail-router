@@ -1,15 +1,17 @@
-# Lista dzialow, do ktorych router moze przekierowac wiadomosc.
-# Edytuj ten plik pod swoja firme -- zmiany nie wymagaja ruszania kodu,
-# wystarczy restart kontenera:  docker compose restart api
+# Departments the router can forward messages to.
+# Edit this file to match your company -- no code changes needed,
+# just restart the container:  docker compose restart api
 #
-# Kazdy dzial ma:
-#   email        - adres, na ktory trafi wiadomosc
-#   name         - krotka nazwa (widoczna w API i logach)
-#   description  - opis dla modelu AI: CO tu trafia, a czego tu NIE wysylac.
-#                  To najwazniejsze pole -- od niego zalezy jakosc routingu.
+# Each department has:
+#   email        - address the message is forwarded to
+#   name         - short name (shown in the API and logs)
+#   description  - guidance for the AI model: WHAT belongs here and what does NOT.
+#                  This is the most important field -- routing quality depends on it.
 #
-# fallback: dzial, do ktorego trafia wszystko, czego model nie umie przypisac
-#           (albo gdy model zawiedzie). Musi byc jednym z adresow ponizej.
+# fallback: department that receives anything the model cannot assign
+#           (or when the model fails). Must be one of the addresses below.
+#
+# A Polish example lives in examples/departments.pl.yaml.
 
 fallback: other@example.com
 
@@ -17,31 +19,31 @@ departments:
   - email: it@example.com
     name: IT
     description: >
-      Problemy techniczne: komputer, sprzet, oprogramowanie, siec, drukarki,
-      konta i hasla, a takze incydenty bezpieczenstwa (np. podejrzany mail / phishing).
+      Technical problems: computers, hardware, software, network, printers,
+      accounts and passwords, plus security incidents (e.g. a suspicious email / phishing).
 
   - email: help-desk@example.com
     name: Help Desk
     description: >
-      Konkretne prosby o wsparcie, ktore nie sa awaria IT: zamowienie sprzetu
-      (mysz, sluchawki, laptop), dostep do systemow wewnetrznych, pytania
-      "jak uzyc narzedzia X". To NIE jest worek na wszystko.
+      Concrete support requests that are not an IT failure: equipment orders
+      (mouse, headset, laptop), access to internal systems, "how do I use tool X"
+      questions. This is NOT a catch-all.
 
   - email: human-resources@example.com
     name: HR
     description: >
-      Ogolne sprawy HR: umowy, onboarding, konflikty i zachowanie w miejscu pracy,
-      benefity (np. karta sportowa), ubezpieczenia, szkolenia, rekrutacja,
-      oceny okresowe. Benefity i szkolenia ZAWSZE tutaj.
+      General HR matters: contracts, onboarding, workplace conduct and conflicts,
+      benefits (e.g. gym cards), insurance, training, recruitment, performance
+      reviews. Benefits and training ALWAYS go here.
 
-  - email: kadry@example.com
-    name: Kadry i place
+  - email: payroll@example.com
+    name: Payroll & Leave
     description: >
-      Administracja kadrowo-placowa: urlop, zwolnienie lekarskie / L4, wyplata,
-      pasek wynagrodzen. NIE obejmuje zwrotu kosztow delegacji.
+      Payroll and absence administration: vacation / time off, sick leave,
+      salary, payslips. Does NOT include travel expense reimbursement.
 
   - email: other@example.com
-    name: Inne
+    name: Other
     description: >
-      Wszystko inne: tematy niezwiazane z firma, small talk, podziekowania bez
-      prosby, niezrozumialy tekst, albo sprawy niepasujace do zadnego dzialu.
+      Everything else: topics unrelated to the company, small talk, thank-yous
+      with no request, unintelligible text, or anything that fits no department.
