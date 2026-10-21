@@ -1,5 +1,14 @@
 # AI Mail Router
 
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white" alt="Python 3.11">
+  <img src="https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker ready">
+  <img src="https://img.shields.io/badge/LLM-Ollama%20%7C%20OpenAI-6366F1" alt="LLM: Ollama | OpenAI">
+  <img src="https://img.shields.io/badge/self--hosted-yes-2DD4BF" alt="Self-hosted">
+</p>
+
 **English** | [Polski](README.pl.md)
 
 **An AI message router for companies.** Employees write in plain language ("my laptop won't turn on", "I'd like to take Friday off"). The AI decides which department should handle it and forwards the message there by email. The department's reply goes straight back to the employee.
