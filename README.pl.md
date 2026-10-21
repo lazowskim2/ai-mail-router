@@ -11,6 +11,8 @@
 - 🛡️ **Odporny na błędy modelu.** Jeśli AI się pomyli, wiadomość trafia do działu awaryjnego i nic nie ginie.
 - 🧩 **Proste REST API** ze Swaggerem. Łatwo podpiąć formularz, intranet, bota na Slacku czy własną aplikację.
 
+<p align="center"><img src="docs/how-it-works.svg" alt="How AI Mail Router works" width="900"></p>
+
 Licencja **MIT**: możesz używać, zmieniać i wdrażać komercyjnie, także u klientów.
 
 ---
@@ -127,24 +129,7 @@ Gdy `API_KEY` jest ustawiony, każde zapytanie musi mieć nagłówek `X-API-Key`
 
 ## Jak to działa
 
-```
-formularz / aplikacja / bot
-          │  POST /api/v1/route
-          ▼
-   [API: FastAPI] ── departments.yaml ──► prompt + lista dozwolonych adresów
-          │
-          │ 1. model dostaje jedno narzędzie: send_email(to, subject, body)
-          ▼
-   [model AI: Ollama / OpenAI / ...]
-          │
-          │ 2. model wywołuje narzędzie i wybiera dział (to = decyzja o routingu)
-          ▼
-   [API waliduje decyzję]  ── zły adres / brak odpowiedzi ──► retry ──► dział awaryjny
-          │
-          │ 3. API wysyła maila przez SMTP, Reply-To = nadawca z requestu
-          ▼
-   [skrzynka działu]
-```
+<p align="center"><img src="docs/under-the-hood.svg" alt="Under the hood: request, AI model with one tool, validation, retry and fallback" width="900"></p>
 
 ### Decyzje projektowe
 

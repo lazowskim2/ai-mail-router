@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#111c33"/>
+    </linearGradient>
+    <linearGradient id="ai" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+    <marker id="arrG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2dd4bf"/>
+    </marker>
+    <marker id="arrA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="600" rx="24" fill="url(#bg)"/>
+
+  <text x="60" y="78" fill="#f1f5f9" font-size="34" font-weight="700">Under the hood</text>
+  <text x="60" y="114" fill="#94a3b8" font-size="18">The AI decides where a message goes. The code makes sure it can't go wrong.</text>
+
+  <!-- A: request -->
+  <rect x="60" y="160" width="240" height="160" rx="16" fill="#1e293b" stroke="#334155"/>
+  <text x="80" y="194" fill="#94a3b8" font-size="13" font-weight="700" letter-spacing="1">REQUEST</text>
+  <text x="80" y="222" fill="#f1f5f9" font-size="16" font-weight="600" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">POST /api/v1/route</text>
+  <rect x="80" y="238" width="200" height="64" rx="8" fill="#0f172a"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13">
+    <text x="94" y="264" fill="#7dd3fc">"email"<tspan fill="#94a3b8">: "john@…"</tspan></text>
+    <text x="94" y="288" fill="#7dd3fc">"message"<tspan fill="#94a3b8">: "…"</tspan></text>
+  </g>
+
+  <path d="M308,240 L348,240" stroke="#64748b" stroke-width="3" marker-end="url(#arr)"/>
+
+  <!-- B: LLM -->
+  <rect x="356" y="160" width="270" height="160" rx="16" fill="url(#ai)"/>
+  <text x="378" y="194" fill="#e0e7ff" font-size="13" font-weight="700" letter-spacing="1">AI MODEL</text>
+  <text x="378" y="222" fill="#fff" font-size="18" font-weight="700">Ollama / OpenAI / …</text>
+  <text x="378" y="250" fill="#e0e7ff" font-size="14">has exactly one tool:</text>
+  <rect x="374" y="262" width="234" height="40" rx="8" fill="#000" fill-opacity="0.22"/>
+  <text x="386" y="287" fill="#fff" font-size="12" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">send_email(to, subject, body)</text>
+
+  <path d="M634,240 L674,240" stroke="#64748b" stroke-width="3" marker-end="url(#arr)"/>
+
+  <!-- C: validation diamond -->
+  <path d="M760,170 L840,240 L760,310 L680,240 Z" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+  <text x="760" y="236" fill="#f1f5f9" font-size="15" font-weight="700" text-anchor="middle">Valid</text>
+  <text x="760" y="256" fill="#f1f5f9" font-size="15" font-weight="700" text-anchor="middle">address?</text>
+
+  <!-- yes -->
+  <path d="M846,240 L886,240" stroke="#2dd4bf" stroke-width="3" marker-end="url(#arrG)"/>
+  <text x="852" y="228" fill="#2dd4bf" font-size="13" font-weight="700">yes</text>
+  <rect x="894" y="160" width="246" height="160" rx="16" fill="#134e4a" stroke="#2dd4bf" stroke-width="2"/>
+  <text x="914" y="194" fill="#99f6e4" font-size="13" font-weight="700" letter-spacing="1">SEND</text>
+  <text x="914" y="222" fill="#f0fdfa" font-size="18" font-weight="700">Email via SMTP</text>
+  <text x="914" y="252" fill="#ccfbf1" font-size="14">To: the chosen department</text>
+  <text x="914" y="276" fill="#ccfbf1" font-size="14">Reply-To: sender from the</text>
+  <text x="914" y="296" fill="#ccfbf1" font-size="14">request, never from the AI</text>
+
+  <!-- no -->
+  <path d="M760,316 L760,360" stroke="#fbbf24" stroke-width="3" marker-end="url(#arrA)"/>
+  <text x="770" y="344" fill="#fbbf24" font-size="13" font-weight="700">no</text>
+  <rect x="660" y="368" width="200" height="50" rx="12" fill="#1e293b" stroke="#fbbf24"/>
+  <text x="760" y="399" fill="#fde68a" font-size="15" font-weight="600" text-anchor="middle">Retry (up to 3×)</text>
+  <path d="M660,393 L491,393 L491,328" stroke="#fbbf24" stroke-width="2.5" fill="none" stroke-dasharray="6 5" marker-end="url(#arrA)"/>
+  <path d="M868,393 L906,393" stroke="#fbbf24" stroke-width="3" marker-end="url(#arrA)"/>
+  <text x="872" y="381" fill="#fbbf24" font-size="12" font-weight="600">still no</text>
+  <rect x="914" y="368" width="226" height="50" rx="12" fill="#1e293b" stroke="#475569" stroke-dasharray="4 4"/>
+  <text x="1027" y="399" fill="#e2e8f0" font-size="15" font-weight="600" text-anchor="middle">Fallback department</text>
+
+  <!-- guardrail cards -->
+  <g>
+    <rect x="60" y="452" width="347" height="104" rx="16" fill="#1e293b" stroke="#334155"/>
+    <circle cx="96" cy="488" r="16" fill="#6366f1"/>
+    <rect x="89" y="486" width="14" height="10" rx="2" fill="#fff"/>
+    <path d="M92,486 v-4 a4,4 0 0 1 8,0 v4" stroke="#fff" stroke-width="2" fill="none"/>
+    <text x="124" y="494" fill="#f1f5f9" font-size="16" font-weight="700">Locked address list</text>
+    <text x="80" y="524" fill="#94a3b8" font-size="14">The model can only pick addresses</text>
+    <text x="80" y="544" fill="#94a3b8" font-size="14">from departments.yaml.</text>
+
+    <rect x="427" y="452" width="347" height="104" rx="16" fill="#1e293b" stroke="#334155"/>
+    <circle cx="463" cy="488" r="16" fill="#2dd4bf"/>
+    <path d="M455,488 l5,5 l10,-10" stroke="#0f172a" stroke-width="3" fill="none"/>
+    <text x="491" y="494" fill="#f1f5f9" font-size="16" font-weight="700">Injection-safe replies</text>
+    <text x="447" y="524" fill="#94a3b8" font-size="14">Reply-To is set by code, so no prompt</text>
+    <text x="447" y="544" fill="#94a3b8" font-size="14">can redirect answers to a stranger.</text>
+
+    <rect x="794" y="452" width="346" height="104" rx="16" fill="#1e293b" stroke="#334155"/>
+    <circle cx="830" cy="488" r="16" fill="#fbbf24"/>
+    <path d="M822,488 a8,8 0 1 1 3,6" stroke="#0f172a" stroke-width="2.5" fill="none"/>
+    <path d="M819,490 l4,6 l5,-4" stroke="#0f172a" stroke-width="2.5" fill="none"/>
+    <text x="858" y="494" fill="#f1f5f9" font-size="16" font-weight="700">Nothing gets lost</text>
+    <text x="814" y="524" fill="#94a3b8" font-size="14">If the model fails, the message</text>
+    <text x="814" y="544" fill="#94a3b8" font-size="14">still reaches the fallback inbox.</text>
+  </g>
+</svg>

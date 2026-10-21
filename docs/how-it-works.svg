@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#111c33"/>
+    </linearGradient>
+    <linearGradient id="ai" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+    <marker id="arrG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2dd4bf"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="560" rx="24" fill="url(#bg)"/>
+
+  <text x="60" y="78" fill="#f1f5f9" font-size="34" font-weight="700">How AI Mail Router works</text>
+  <text x="60" y="114" fill="#94a3b8" font-size="18">Employees write in plain language. AI sends it to the right department.</text>
+
+  <!-- step numbers -->
+  <g font-size="14" font-weight="700" fill="#0f172a">
+    <circle cx="74" cy="168" r="14" fill="#2dd4bf"/><text x="74" y="173" text-anchor="middle">1</text>
+    <circle cx="474" cy="168" r="14" fill="#2dd4bf"/><text x="474" y="173" text-anchor="middle">2</text>
+    <circle cx="854" cy="168" r="14" fill="#2dd4bf"/><text x="854" y="173" text-anchor="middle">3</text>
+  </g>
+  <g font-size="15" font-weight="600" fill="#cbd5e1">
+    <text x="98" y="173">Employee sends a message</text>
+    <text x="498" y="173">AI picks the department</text>
+    <text x="878" y="173">Email lands in the right inbox</text>
+  </g>
+
+  <!-- 1. employee -->
+  <g>
+    <rect x="60" y="200" width="320" height="200" rx="18" fill="#1e293b" stroke="#334155"/>
+    <circle cx="106" cy="246" r="22" fill="#334155"/>
+    <circle cx="106" cy="239" r="8" fill="#94a3b8"/>
+    <path d="M92,258 a14,12 0 0 1 28,0 z" fill="#94a3b8"/>
+    <text x="140" y="242" fill="#f1f5f9" font-size="17" font-weight="600">John Smith</text>
+    <text x="140" y="263" fill="#94a3b8" font-size="14">john@company.com</text>
+    <rect x="84" y="290" width="272" height="86" rx="14" fill="#0f172a" stroke="#475569"/>
+    <text x="104" y="324" fill="#e2e8f0" font-size="17">"My laptop won't turn on</text>
+    <text x="104" y="350" fill="#e2e8f0" font-size="17">and I have a meeting at 10"</text>
+  </g>
+
+  <path d="M388,300 L452,300" stroke="#64748b" stroke-width="3" marker-end="url(#arr)"/>
+
+  <!-- 2. AI router -->
+  <g>
+    <rect x="460" y="200" width="300" height="200" rx="18" fill="url(#ai)"/>
+    <g transform="translate(610,262)" fill="none" stroke="#fff" stroke-width="3">
+      <rect x="-26" y="-26" width="52" height="52" rx="10"/>
+      <rect x="-12" y="-12" width="24" height="24" rx="4" fill="#fff" fill-opacity="0.25"/>
+      <path d="M-14,-26 v-10 M0,-26 v-10 M14,-26 v-10 M-14,26 v10 M0,26 v10 M14,26 v10 M-26,-14 h-10 M-26,0 h-10 M-26,14 h-10 M26,-14 h10 M26,0 h10 M26,14 h10"/>
+    </g>
+    <text x="610" y="338" fill="#fff" font-size="21" font-weight="700" text-anchor="middle">AI Router</text>
+    <text x="610" y="364" fill="#e0e7ff" font-size="15" text-anchor="middle">reads the message and matches it</text>
+    <text x="610" y="384" fill="#e0e7ff" font-size="15" text-anchor="middle">to your departments.yaml</text>
+  </g>
+
+  <!-- fan out arrows -->
+  <path d="M768,300 C800,300 806,230 836,230" stroke="#2dd4bf" stroke-width="3.5" fill="none" marker-end="url(#arrG)"/>
+  <path d="M768,300 C800,300 806,282 836,282" stroke="#475569" stroke-width="2" fill="none" stroke-dasharray="5 5"/>
+  <path d="M768,300 C800,300 806,334 836,334" stroke="#475569" stroke-width="2" fill="none" stroke-dasharray="5 5"/>
+  <path d="M768,300 C800,300 806,386 836,386" stroke="#475569" stroke-width="2" fill="none" stroke-dasharray="5 5"/>
+
+  <!-- 3. departments -->
+  <g font-size="16">
+    <rect x="844" y="208" width="296" height="44" rx="12" fill="#134e4a" stroke="#2dd4bf" stroke-width="2"/>
+    <text x="866" y="236" fill="#f0fdfa" font-weight="700">IT</text>
+    <text x="900" y="236" fill="#99f6e4">it@company.com</text>
+    <circle cx="1112" cy="230" r="11" fill="#2dd4bf"/>
+    <path d="M1106,230 l4,4 l8,-8" stroke="#0f172a" stroke-width="2.5" fill="none"/>
+
+    <rect x="844" y="260" width="296" height="44" rx="12" fill="#1e293b" stroke="#334155"/>
+    <text x="866" y="288" fill="#cbd5e1" font-weight="600">HR</text>
+    <text x="906" y="288" fill="#64748b">hr@company.com</text>
+
+    <rect x="844" y="312" width="296" height="44" rx="12" fill="#1e293b" stroke="#334155"/>
+    <text x="866" y="340" fill="#cbd5e1" font-weight="600">Payroll</text>
+    <text x="938" y="340" fill="#64748b">payroll@company.com</text>
+
+    <rect x="844" y="364" width="296" height="44" rx="12" fill="#1e293b" stroke="#334155" stroke-dasharray="4 4"/>
+    <text x="866" y="392" fill="#cbd5e1" font-weight="600">Other</text>
+    <text x="924" y="392" fill="#64748b">fallback</text>
+  </g>
+
+  <!-- reply loop -->
+  <path d="M992,416 L992,470 L220,470 L220,410" stroke="#2dd4bf" stroke-width="2.5" fill="none" stroke-dasharray="7 6" marker-end="url(#arrG)"/>
+  <rect x="436" y="452" width="330" height="36" rx="18" fill="#0f172a" stroke="#2dd4bf"/>
+  <text x="601" y="476" fill="#5eead4" font-size="15" font-weight="600" text-anchor="middle">IT replies straight to John (Reply-To)</text>
+
+  <text x="60" y="528" fill="#64748b" font-size="14">Self-hosted · any OpenAI-compatible model · any SMTP server · MIT</text>
+  <text x="1140" y="528" fill="#64748b" font-size="14" text-anchor="end">github.com/lazowskim2/ai-mail-router</text>
+</svg>

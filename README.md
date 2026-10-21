@@ -12,6 +12,8 @@
 - 🌍 **Multilingual.** It understands messages in any language the model speaks and replies in the same language. Tested in English and Polish.
 - 🧩 **Simple REST API** with Swagger. Easy to plug into a web form, an intranet, a Slack bot or your own app.
 
+<p align="center"><img src="docs/how-it-works.svg" alt="How AI Mail Router works" width="900"></p>
+
 **MIT licensed**: use it, modify it and deploy it commercially, including for clients.
 
 ---
@@ -120,24 +122,7 @@ When `API_KEY` is set, every request must include an `X-API-Key` header. All opt
 
 ## How it works
 
-```
-web form / app / bot
-          │  POST /api/v1/route
-          ▼
-   [API: FastAPI] ── departments.yaml ──► prompt + list of allowed addresses
-          │
-          │ 1. the model gets a single tool: send_email(to, subject, body)
-          ▼
-   [AI model: Ollama / OpenAI / ...]
-          │
-          │ 2. the model calls the tool and picks a department (to = routing decision)
-          ▼
-   [API validates the decision]  ── bad address / no answer ──► retry ──► fallback department
-          │
-          │ 3. API sends the email over SMTP, Reply-To = sender from the request
-          ▼
-   [department inbox]
-```
+<p align="center"><img src="docs/under-the-hood.svg" alt="Under the hood: request, AI model with one tool, validation, retry and fallback" width="900"></p>
 
 ### Design decisions
 
