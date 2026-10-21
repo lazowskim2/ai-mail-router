@@ -1,6 +1,7 @@
 # AI Mail Router
 
 <p align="center">
+  <a href="https://github.com/lazowskim2/ai-mail-router/actions/workflows/ci.yml"><img src="https://github.com/lazowskim2/ai-mail-router/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white" alt="Python 3.11">
   <img src="https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white" alt="FastAPI">
@@ -163,6 +164,17 @@ api/app/
   mailer.py           - wysyłka SMTP (plain / STARTTLS / SSL), Reply-To
   config.py           - ustawienia ze zmiennych środowiskowych
 ```
+
+---
+
+## Testy
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+Testy działają na udawanym modelu AI, więc nie potrzebują ani modelu, ani serwera pocztowego. Uruchamiają się też automatycznie przy każdym pushu (GitHub Actions).
 
 ---
 
